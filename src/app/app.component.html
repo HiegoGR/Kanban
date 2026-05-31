@@ -1,0 +1,200 @@
+<main class="page">
+  <section class="hero">
+    <div>
+      <h1>Quadro Kanban</h1>
+      <p class="subtitle">
+        Organize suas tarefas entre Backlog, Para fazer, Em desenvolvimento e Finalizado.
+      </p>
+    </div>
+
+    <div class="summary-card">
+      <strong>{{ totalTasks() }}</strong>
+      <span>tarefas no quadro</span>
+    </div>
+  </section>
+
+  <form class="task-form" (ngSubmit)="addTask()">
+    <div class="field">
+      <label for="title">Título da tarefa</label>
+      <input
+        id="title"
+        name="title"
+        type="text"
+        placeholder="Ex: Criar tela de login"
+        [ngModel]="newTaskTitle()"
+        (ngModelChange)="newTaskTitle.set($event)"
+      />
+    </div>
+
+    <div class="field">
+      <label for="description">Descrição curta</label>
+      <input
+        id="description"
+        name="description"
+        type="text"
+        placeholder="Resumo rápido da tarefa"
+        [ngModel]="newTaskDescription()"
+        (ngModelChange)="newTaskDescription.set($event)"
+      />
+    </div>
+
+    <div class="field">
+      <label for="assignedTo">Responsável</label>
+      <input
+        id="assignedTo"
+        name="assignedTo"
+        type="text"
+        placeholder="Quem está trabalhando?"
+        [ngModel]="newTaskAssignedTo()"
+        (ngModelChange)="newTaskAssignedTo.set($event)"
+      />
+    </div>
+
+    <div class="field field-full">
+      <label for="details">Detalhes da tarefa</label>
+      <textarea
+        id="details"
+        name="details"
+        rows="3"
+        placeholder="Descreva melhor o que precisa ser feito, regras, observações, links ou informações extras"
+        [ngModel]="newTaskDetails()"
+        (ngModelChange)="newTaskDetails.set($event)"
+      ></textarea>
+    </div>
+
+    <button type="submit">Adicionar no Backlog</button>
+  </form>
+
+  <section class="board" aria-label="Quadro Kanban">
+    @for (column of columns; track column.id) {
+      <article class="column">
+        <header class="column-header">
+          <div>
+            <h2>{{ column.title }}</h2>
+            <p>{{ column.description }}</p>
+          </div>
+          <span>{{ getTasksByColumn(column.id).length }}</span>
+        </header>
+
+        <div class="cards">
+          @for (task of getTasksByColumn(column.id); track task.id) {
+            <article class="task-card">
+              <div class="task-top">
+                <span class="priority">{{ task.priority }}</span>
+                <button type="button" class="delete" (click)="removeTask(task.id)" aria-label="Remover tarefa">×</button>
+              </div>
+
+              <h3>{{ task.title }}</h3>
+              <p class="description">{{ task.description }}</p>
+
+              <div class="task-meta">
+                <span><strong>Responsável:</strong> {{ task.assignedTo || 'Não informado' }}</span>
+                <span><strong>Criado:</strong> {{ formatDate(task.createdAt) }}</span>
+              </div>
+
+              @if (task.details) {
+                <details class="details-box">
+                  <summary>Ver detalhes</summary>
+                  <p>{{ task.details }}</p>
+                </details>
+              }
+
+              <div class="stage-dates">
+                <span><strong>Backlog:</strong> {{ formatDate(task.stageDates.backlog) }}</span>
+                <span><strong>Para fazer:</strong> {{ formatDate(task.stageDates.todo) }}</span>
+                <span><strong>Desenvolvimento:</strong> {{ formatDate(task.stageDates.development) }}</span>
+                <span><strong>Finalizado:</strong> {{ formatDate(task.stageDates.done) }}</span>
+              </div>
+
+              <div class="actions actions-grid">
+                <button type="button" (click)="moveTask(task.id, 'left')" [disabled]="!canMove(task, 'left')">
+                  ← Voltar
+                </button>
+                <button type="button" class="secondary" (click)="openEdit(task)">
+                  Editar
+                </button>
+                <button type="button" (click)="moveTask(task.id, 'right')" [disabled]="!canMove(task, 'right')">
+                  Avançar →
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <div class="empty-state">Nenhuma tarefa aqui.</div>
+          }
+        </div>
+      </article>
+    }
+  </section>
+
+  @if (editingTask(); as task) {
+    <section class="modal-backdrop" aria-label="Editar card">
+      <form class="edit-modal" (ngSubmit)="saveEdit()">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow">Editar card</p>
+            <h2>{{ task.title || 'Novo título' }}</h2>
+          </div>
+          <button type="button" class="close" (click)="closeEdit()" aria-label="Fechar edição">×</button>
+        </header>
+
+        <div class="edit-grid">
+          <div class="field">
+            <label for="editTitle">Título</label>
+            <input id="editTitle" name="editTitle" type="text" [(ngModel)]="task.title" />
+          </div>
+
+          <div class="field">
+            <label for="editAssignedTo">Responsável</label>
+            <input id="editAssignedTo" name="editAssignedTo" type="text" [(ngModel)]="task.assignedTo" />
+          </div>
+
+          <div class="field">
+            <label for="editPriority">Prioridade</label>
+            <select id="editPriority" name="editPriority" [(ngModel)]="task.priority">
+              @for (priority of priorities; track priority) {
+                <option [value]="priority">{{ priority }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="field field-full">
+            <label for="editDescription">Descrição curta</label>
+            <input id="editDescription" name="editDescription" type="text" [(ngModel)]="task.description" />
+          </div>
+
+          <div class="field field-full">
+            <label for="editDetails">Detalhes / informações extras</label>
+            <textarea id="editDetails" name="editDetails" rows="6" [(ngModel)]="task.details"></textarea>
+          </div>
+        </div>
+
+        <section class="history-panel">
+          <h3>Datas por etapa</h3>
+          <div class="stage-dates modal-dates">
+            <span><strong>Data criação:</strong> {{ formatDate(task.createdAt) }}</span>
+            <span><strong>Data Backlog:</strong> {{ formatDate(task.stageDates.backlog) }}</span>
+            <span><strong>Data Para fazer:</strong> {{ formatDate(task.stageDates.todo) }}</span>
+            <span><strong>Data Em desenvolvimento:</strong> {{ formatDate(task.stageDates.development) }}</span>
+            <span><strong>Data Finalizado:</strong> {{ formatDate(task.stageDates.done) }}</span>
+          </div>
+
+          <h3>Histórico de movimentação</h3>
+          <div class="timeline">
+            @for (item of task.history; track item.movedAt) {
+              <div class="timeline-item">
+                <strong>{{ getColumnTitle(item.from) }} → {{ getColumnTitle(item.to) }}</strong>
+                <span>{{ formatDate(item.movedAt) }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <footer class="modal-actions">
+          <button type="button" class="secondary" (click)="closeEdit()"> Cancelar </button>
+          <button type="submit"> Salvar alterações </button>
+          <button type="button" class="danger" (click)="deleteEditingTask()"> Deletar </button>
+        </footer>
+      </form>
+    </section>
+  }
+</main>
