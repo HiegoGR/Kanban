@@ -13,6 +13,17 @@
     </div>
   </section>
 
+  @if (errorMessage()) {
+    <div class="status-message error-message">
+      <span>{{ errorMessage() }}</span>
+      <button type="button" class="secondary" (click)="loadBoard()">Tentar novamente</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="status-message">Carregando quadro...</div>
+  }
+
   <form class="task-form" (ngSubmit)="addTask()">
     <div class="field">
       <label for="title">Título da tarefa</label>
@@ -62,11 +73,11 @@
       ></textarea>
     </div>
 
-    <button type="submit">Adicionar no Backlog</button>
+    <button type="submit" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Adicionar no Backlog' }}</button>
   </form>
 
   <section class="board" aria-label="Quadro Kanban">
-    @for (column of columns; track column.id) {
+    @for (column of columns(); track column.id) {
       <article class="column">
         <header class="column-header">
           <div>
@@ -100,10 +111,10 @@
               }
 
               <div class="stage-dates">
-                <span><strong>Backlog:</strong> {{ formatDate(task.stageDates.backlog) }}</span>
-                <span><strong>Para fazer:</strong> {{ formatDate(task.stageDates.todo) }}</span>
-                <span><strong>Desenvolvimento:</strong> {{ formatDate(task.stageDates.development) }}</span>
-                <span><strong>Finalizado:</strong> {{ formatDate(task.stageDates.done) }}</span>
+                <span><strong>Backlog:</strong> {{ formatDate(task.backlogAt) }}</span>
+                <span><strong>Para fazer:</strong> {{ formatDate(task.todoAt) }}</span>
+                <span><strong>Desenvolvimento:</strong> {{ formatDate(task.developmentAt) }}</span>
+                <span><strong>Finalizado:</strong> {{ formatDate(task.doneAt) }}</span>
               </div>
 
               <div class="actions actions-grid">
@@ -172,17 +183,17 @@
           <h3>Datas por etapa</h3>
           <div class="stage-dates modal-dates">
             <span><strong>Data criação:</strong> {{ formatDate(task.createdAt) }}</span>
-            <span><strong>Data Backlog:</strong> {{ formatDate(task.stageDates.backlog) }}</span>
-            <span><strong>Data Para fazer:</strong> {{ formatDate(task.stageDates.todo) }}</span>
-            <span><strong>Data Em desenvolvimento:</strong> {{ formatDate(task.stageDates.development) }}</span>
-            <span><strong>Data Finalizado:</strong> {{ formatDate(task.stageDates.done) }}</span>
+            <span><strong>Data Backlog:</strong> {{ formatDate(task.backlogAt) }}</span>
+            <span><strong>Data Para fazer:</strong> {{ formatDate(task.todoAt) }}</span>
+            <span><strong>Data Em desenvolvimento:</strong> {{ formatDate(task.developmentAt) }}</span>
+            <span><strong>Data Finalizado:</strong> {{ formatDate(task.doneAt) }}</span>
           </div>
 
           <h3>Histórico de movimentação</h3>
           <div class="timeline">
-            @for (item of task.history; track item.movedAt) {
+            @for (item of task.history ?? []; track item.id ?? item.movedAt) {
               <div class="timeline-item">
-                <strong>{{ getColumnTitle(item.from) }} → {{ getColumnTitle(item.to) }}</strong>
+                <strong>{{ getColumnTitle(item.fromColumnId) }} → {{ getColumnTitle(item.toColumnId) }}</strong>
                 <span>{{ formatDate(item.movedAt) }}</span>
               </div>
             }
@@ -191,8 +202,8 @@
 
         <footer class="modal-actions">
           <button type="button" class="secondary" (click)="closeEdit()"> Cancelar </button>
-          <button type="submit"> Salvar alterações </button>
-          <button type="button" class="danger" (click)="deleteEditingTask()"> Deletar </button>
+          <button type="submit" [disabled]="saving()"> {{ saving() ? 'Salvando...' : 'Salvar alterações' }} </button>
+          <button type="button" class="danger" (click)="deleteEditingTask()" [disabled]="saving()"> Deletar </button>
         </footer>
       </form>
     </section>

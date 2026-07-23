@@ -427,3 +427,22 @@ button:disabled {
 .danger:hover {
   background: #b91c1c !important;
 }
+
+.status-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  border: 1px solid #dbe1ea;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #39445a;
+}
+
+.error-message {
+  border-color: #fecaca;
+  background: #fff7f7;
+  color: #991b1b;
+}
