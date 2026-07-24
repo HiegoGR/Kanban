@@ -130,7 +130,3 @@ src/
 - Responsáveis cadastrados
 - Dashboard com métricas
 - Testes unitários e de integração
-
-## Autor
-
-Projeto desenvolvido para fins de estudo utilizando Angular 21 e Micronaut.
